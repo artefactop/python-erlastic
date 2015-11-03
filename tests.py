@@ -5,6 +5,8 @@ import unittest
 from erlastic import decode, encode
 from erlastic.types import *
 
+from builtins import bytes, int
+
 erlang_term_binaries = [
     # nil
     ([], list, b"\x83j"),

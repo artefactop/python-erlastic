@@ -1,8 +1,10 @@
 
-from __future__ import division
+from __future__ import division, unicode_literals
 
 import struct
 import zlib
+
+from builtins import bytes, int
 
 from erlastic.constants import *
 from erlastic.types import *
@@ -23,17 +25,17 @@ class ErlangTermDecoder(object):
                 except: pass
 
     def decode(self, buf, offset=0):
-        version = buf[offset]
+        version = ord(buf[offset])
         if version != FORMAT_VERSION:
             raise EncodingError("Bad version number. Expected %d found %d" % (FORMAT_VERSION, version))
         return self.decode_part(buf, offset+1)[0]
 
     def decode_part(self, buf, offset=0):
-        return self.decoders[buf[offset]](buf, offset+1)
+        return self.decoders[ord(buf[offset])](buf, offset+1)
 
     def decode_97(self, buf, offset):
         """SMALL_INTEGER_EXT"""
-        return buf[offset], offset+1
+        return ord(buf[offset]), offset+1
 
     def decode_98(self, buf, offset):
         """INTEGER_EXT"""
@@ -55,13 +57,13 @@ class ErlangTermDecoder(object):
 
     def decode_115(self, buf, offset):
         """SMALL_ATOM_EXT"""
-        atom_len = buf[offset]
+        atom_len = ord(buf[offset])
         atom = buf[offset+1:offset+1+atom_len]
         return self.convert_atom(atom), offset+atom_len+1
 
     def decode_104(self, buf, offset):
         """SMALL_TUPLE_EXT"""
-        arity = buf[offset]
+        arity = ord(buf[offset])
         offset += 1
 
         items = []
@@ -112,7 +114,7 @@ class ErlangTermDecoder(object):
 
     def decode_110(self, buf, offset):
         """SMALL_BIG_EXT"""
-        n = buf[offset]
+        n = ord(buf[offset])
         offset += 1
         return self.decode_bigint(n, buf, offset)
 
@@ -123,12 +125,12 @@ class ErlangTermDecoder(object):
         return self.decode_bigint(n, buf, offset)
 
     def decode_bigint(self, n, buf, offset):
-        sign = buf[offset]
+        sign = ord(buf[offset])
         offset += 1
         b = 1
         val = 0
         for i in range(n):
-            val += buf[offset] * b
+            val += ord(buf[offset]) * b
             b <<= 8
             offset += 1
         if sign != 0:
@@ -149,7 +151,7 @@ class ErlangTermDecoder(object):
         node, offset = self.decode_part(buf, offset+2)
         if not isinstance(node, Atom):
             raise EncodingError("Expected atom while parsing NEW_REFERENCE_EXT, found %r instead" % node)
-        creation = buf[offset]
+        creation = ord(buf[offset])
         reference_id = struct.unpack(">%dL" % id_len, buf[offset+1:offset+1+4*id_len])
         return Reference(node, reference_id, creation), offset+1+4*id_len
 
